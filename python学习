@@ -175,3 +175,53 @@ def fact_iter(num, product):
         return product
     return fact_iter(num - 1, num * product)
 Python标准的解释器没有针对尾递归做优化，任何递归函数都存在栈溢出的问题。
+23.当我们使用for循环时，只要作用于一个可迭代对象，for循环就可以正常运行，而我们不太关心该对象究竟是list还是其他数据类型。
+
+那么，如何判断一个对象是可迭代对象呢？方法是通过collections模块的Iterable类型判断：
+如果要对list实现类似Java那样的下标循环怎么办？Python内置的enumerate函数可以把一个list变成索引-元素对，这样就可以在for循环中同时迭代索引和元素本身：
+
+>>> for i, value in enumerate(['A', 'B', 'C']):
+...     print(i, value)
+...
+0 A
+1 B
+2 C
+24.在Python中，这种一边循环一边计算的机制，称为生成器：generator。
+第一种方法很简单，只要把一个列表生成式的[]改成()，就创建了一个generator：
+
+>>> L = [x * x for x in range(10)]
+>>> L
+[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+>>> g = (x * x for x in range(10))
+>>> g
+<generator object <genexpr> at 0x1022ef630>
+如果要一个一个打印出来，可以通过next()函数获得generator的下一个返回值：
+
+>>> next(g)
+0
+我们创建了一个generator后，基本上永远不会调用next()，而是通过for循环来迭代它，
+
+这就是定义generator的另一种方法。如果一个函数定义中包含yield关键字，那么这个函数就不再是一个普通函数，而是一个generator：
+请注意区分普通函数和generator函数，普通函数调用直接返回结果：
+generator函数的“调用”实际返回一个generator对象：
+25.我们已经知道，可以直接作用于for循环的数据类型有以下几种：
+
+一类是集合数据类型，如list、tuple、dict、set、str等；
+
+一类是generator，包括生成器和带yield的generator function。
+
+这些可以直接作用于for循环的对象统称为可迭代对象：Iterable。
+
+可以使用isinstance()判断一个对象是否是Iterable对象：
+
+>>> from collections import Iterable
+>>> isinstance([], Iterable)
+True
+
+26.凡是可作用于for循环的对象都是Iterable类型；
+
+凡是可作用于next()函数的对象都是Iterator类型，它们表示一个惰性计算的序列；
+
+集合数据类型如list、dict、str等是Iterable但不是Iterator，不过可以通过iter()函数获得一个Iterator对象。
+
+Python的for循环本质上就是通过不断调用next()函数实现的
