@@ -401,9 +401,272 @@ execute now():
 
 	当函数的参数个数太多，需要简化时，使用functools.partial可以创建一个新的函数，这个新函数可以固定住原函数的部分参数，从而在调用时更简单。
 	
+2018.4.17
+1.模块：
+	提高代码的课维护性；编写代码不必从零开始。
+	可以避免函数名和变量名冲突。但也要避免与内置函数名字冲突。（如系统自带sys模块，自己命名的模块就不可命名为sys.py，否则无法导入系统自带的sys模块）
+	为避免模块名冲突，Python引入按目录来组织模块的方法，称为”包“package。
+	注意，每一个包目录下都会有一个__init__.py的文件，这个文件必须存在，否则Python就把这个目录当成普通目录，而不是一个包。__init__.py本身是一个模块，他的模块名就是包名
+
+	创建自己的模块时，要注意：
+		模块名要遵循Python变量命名规范，不要使用中文、特殊字符；
+		模块名不要和系统模块名冲突，最好先查看系统是否已存在该模块，检查方法是在Python交互环境执行import abc，若成功则说明系统存在此模块。
+	作用域：
+		在Python中是通过_前缀来实现的private的
+		类似__xxx__这样的变量是特殊变量，可以被直接引用，但是有特殊用途。
+	安装第三方模块：
+		pip install Pillow
+		第三方库都会在Python官方的pypi.python.org网站注册
+		默认情况下，Python解释器会搜索当前目录、所有已安装的内置模块，和第三方模块，搜索路径存放在sys模块的path变量中：
+		import sys  sys.path
+		要添加自己的搜索目录，两种方法：
+			直接修改sys.path
+					import sys
+					sys.path.append('/')
+					在运行时修改，运行结束后失效
+			设置环境变量PYTHONPATH，该环境变量的内容会被自动添加到模块搜索路径中。
+2.面向对象编程OOP 封装 继承 多态
+	面向过程的程序吧计算机程序视为一系列命令集合，即一组函数的顺序执行，为了简化程序设计，面向过程把函数继续切分为子函数，即把大块函数切割成小块函数来降低系统的复杂度。
+	面向对象程序设计吧计算机程序视为一组对象的集合，而每个对象可以接收其他对象发过来的消息，并处理这些消息，计算机程序执行的就是一系列消息在各个对象之间的传递。
+	给对象发消息就是调用对象对应的关联函数，，我们称之为对象的方法。
+	面向对象的设计思想是抽象出class，根据class创建instance。
+	类和实例：
+		类可以起到模板的作用，可以在创建实例的时候，把一些我们认为必须绑定的属性强制填写进去，通过定义一个特殊的__init__方法。（两个下划线）
+		和普通函数相比，在类中定义的函数只有一点不同，就是第一个参数永远是实例变量self，但调用时，不用传递该参数。除此外，与普通函数美什么区别。仍可以用默认参数，可变参数，关键字参数，和命名关键字参数
+		封装：
+			好处：数据和逻辑被封装，调用容易，不需要知道内部实现的细节；可以给类增加新的方法；
+		和静态语言不同，Python允许对实例变量绑定任何数据，也就是说，对于两个实例变量，虽然他们都是同一个类的不同实例，但拥有的变量名称都可能不同。
+	访问限制： 可以使代码更加健壮。
+		要让内部属性不被外部访问，可以把属性名称前加两个下划线__，在Python中，实例的变量名如果以__开头，就变成了一个私有变量，只有内部可以访问，外部不可以访问。Python解释器对外把__name变量改成_Student__name或其他变量名（不同Python解释器可能改的不同）.
+		在方法中，可以对参数做检查，避免传入无效的参数，故有setter函数
+		在Python中，变量名类似__xxx__，双下划线开头结尾，是特殊变量，可以直接访问，不是private变量
+		以一个下划线开头的变量，外部可以访问，但约定，最好当成私有变量。
+	继承和多态：
+		继承：最大的好处就是获得了父类的全部功能；第二个好处就是需要我们队代码做一点改进。继承的另一个好处，多态
+		多态：调用方只管调用，不管细节，而当我们新增一个Animal的子类时，只要确保run()方法编写正确，不管原来的代码是如何调用的，这就是
+		著名的”开闭原则“：
+			对扩展开放:允许新增Animal子类
+			对修改封闭：不需要修改依赖Animal类型的run_twice()等函数。
+		def run_twice(animal):
+    		animal.run()
+    		animal.run()
+
+    	>>> run_twice(Animal())
+			Animal is running...
+			Animal is running...
+		>>> run_twice(Cat())
+			Cat is running...
+			Cat is running...
+		静态语言vs动态语言：
+			静态语言如java，如需要传入Animal类型，则传入对象必须是这类型或者他的子类，否则无法调用run()方法。
+			动态语言，不一定要传入Animal类型或其子类，只要保证传入对象有一个run()方法就可以了。这就是动态语言的“鸭子类型”，不要求严格的继承体系。
+			class Timer(object):
+    			def run(self):
+       				print('Start...')
+    获取对象信息：
+    	判断对象类型：使用type()函数
+    		>>> type('abc')==type('123')
+				True
+    	判断一个对象是否是函数怎么办？可以使用types模块中定义的常量
+    		>>> import types
+			>>> def fn():
+			...     pass
+			...
+			>>> type(fn)==types.FunctionType
+			True
+		对于class的继承关系来说，使用type()就很不方便。我们要判断class的类型，可以使用isinstance()函数
+			isinstance()判断的是一个对象是否是该类型本身，或者位于该类型的父继承链上。
+			能用type()判断的基本类型也可以用isinstance()判断：
+				>>> isinstance('a', str)
+					True
+			可以判断一个变量是否是某些类型中的一种，比如下面的代码就可以判断是否是list或者tuple：
+				>>> isinstance([1, 2, 3], (list, tuple))
+					True
+			总是优先使用isinstance()判断类型，可以将指定类型及其子类“一网打尽”
+		使用dir():
+			如果要获得一个对象的所有属性和方法，可以使用dir()函数，它返回一个包含字符串的list，比如，获得一个str对象的所有属性和方法
+			在len()函数内部，它自动去调用该对象的__len__()方法，所以，下面的代码是等价的：
+				>>> len('ABC')
+					3
+				>>> 'ABC'.__len__()
+					3
+		仅仅把属性和方法列出来是不够的，配合getattr()、setattr()以及hasattr()，我们可以直接操作一个对象的状态：
+			正确的用法的例子如下：
+
+			def readImage(fp):
+    			if hasattr(fp, 'read'):
+       				return readData(fp)
+  				return None
+			假设我们希望从文件流fp中读取图像，我们首先要判断该fp对象是否存在read方法，如果存在，则该对象是一个流，如果不存在，则无法读取。hasattr()就派上了用场。
+			请注意，在Python这类动态语言中，根据鸭子类型，有read()方法，不代表该fp对象就是一个文件流，它也可能是网络流，也可能是内存中的一个字节流，但只要read()方法返回的是有效的图像数据，就不影响读取图像的功能。
+	实例属性和类属性：
+		给实例绑定属性的方法是通过实例变量，或者通过self变量；
+		如果是类本身需要绑定一个属性，可以直接在class中定义属性，这种属性是类所有；但类的所有 实例都可以访问到。
+		在编写程序的时候，千万不要对实例属性和类属性使用相同的名字，因为相同名称的实例属性将屏蔽掉类属性，但是当你删除实例属性后，再使用相同的名称，访问到的将是类属性。
+		>>> class Student(object):
+		...     name = 'Student'
+		...
+		>>> s = Student() # 创建实例s
+		>>> print(s.name) # 打印name属性，因为实例并没有name属性，所以会继续查找class的name属性
+		Student
+		>>> print(Student.name) # 打印类的name属性
+		Student
+		>>> s.name = 'Michael' # 给实例绑定name属性
+		>>> print(s.name) # 由于实例属性优先级比类属性高，因此，它会屏蔽掉类的name属性
+		Michael
+		>>> print(Student.name) # 但是类属性并未消失，用Student.name仍然可以访问
+		Student
+		>>> del s.name # 如果删除实例的name属性
+		>>> print(s.name) # 再次调用s.name，由于实例的name属性没有找到，类的name属性就显示出来了
+		Student
+		实例属性属于各个实例所有，互不干扰；
+
+		类属性属于类所有，所有实例共享一个属性；
+
+		不要对实例属性和类属性使用相同的名字，否则将产生难以发现的错误。
+		例子：每创建一个实例，count加1
+		class Student(object):
+			count = 0#每次实例化对象的时候，只需init来为其绑定属性，不会执行类属性部分，即从类属性之后的部分开始运行的，故每次创建实例不会初始化为0
+			def __init__(self,name):
+				self.__name = name
+				Student.count = Student.count + 1#1、init方法是绑定实例的属性用的，不能调用类属性count，故要加Student。
+3.面向对象高级编程
+	使用__slots__:
+		当我们定义了一个class，创建了一个class的实例后，可以给该实例绑定任何属性和方法，这就是动态语言的灵活性。
+		但是，给一个实例绑定的方法，对另一个实例是不起作用的，为了给所有实例都绑定方法，可以给class绑定方法。
+		>>> def set_score(self, score):
+		...     self.score = score
+		...
+		>>> Student.set_score = set_score
+		给class绑定方法后，所有实例均可调用
+		>>> s.set_score(100)
+		>>> s.score
+			100
+		>>> s2.set_score(99)
+		>>> s2.score
+			99
+		通常情况下，上面的set_score方法可以直接定义在class中，但动态绑定允许我们在程序运行的过程中动态给class加上功能，这在静态语言中很难实现。
+		为了达到限制的目的，Python允许在定义class的时候，定义一个特殊的__slots__变量，来限制该class实例能添加的属性；
+		class Student(object):
+    		__slots__ = ('name', 'age') # 用tuple定义允许绑定的属性名称
+    	>>> s = Student() # 创建新的实例
+		>>> s.name = 'Michael' # 绑定属性'name'
+		>>> s.age = 25 # 绑定属性'age'
+		>>> s.score = 99 # 绑定属性'score'
+			Traceback (most recent call last):
+ 			File "<stdin>", line 1, in <module>
+			AttributeError: 'Student' object has no attribute 'score'
+		使用__slots__变量时，定义的属性仅对当前类实例起作用，对继承的子类是不起作用的。
+		除非在子类中也定义__slots__，这样，子类实例允许定义的属性就是自身的__slots__加上父类的__slots__
+	使用@property:
+		负责把一个方法编程属性调用的。广泛应用在类的定义中，可以让调用者写出简短的代码，同时保证对参数进行必要的检查，这样，程序运行时就减少了出错的可能性。
+		既能检查参数又能用类似属性这样简单的方式来访问类的变量。
+		
+		把一个getter方法变成属性，只需要加上@property就可以了，此时，@property本身又创建了另一个装饰器@score.setter，负责把一个setter方法变成属性赋值，于是，我们就拥有一个可控的属性操作
+
+		还可以定义只读属性，只定义getter方法，不定义setter方法就是一个只读属性：
+		class Student(object):
+
+   			@property
+    		def birth(self):
+        		return self._birth
+
+    		@birth.setter
+    		def birth(self, value):
+        		self._birth = value
+
+    		@property
+    		def age(self):
+        		return 2015 - self._birth
+    多重继承：
+    	通过多重继承，一个子类就可以获得多个父类的所有功能。Mixln是一种常见的设计（Java只允许单继承，不能用Mixln的设计）
+    	class Dog(Mammal, Runnable):
+    		pass
+    定制类：
+    	__str__   __repr__:
+    		怎么才能打印得好看呢？只需要定义好__str__()方法，返回一个好看的字符串就可以了：
+
+			>>> class Student(object):
+			...     def __init__(self, name):
+			...         self.name = name
+			...     def __str__(self):
+			...         return 'Student object (name: %s)' % self.name
+			...
+			>>> print(Student('Michael'))
+			Student object (name: Michael)
+		__iter__:
+			如果一个类想被用于for。。。in 循环，类似list或tuple那样，就必须实现一个__iter__()方法，该方法返回一个迭代对象，然后，Python的for循环就会不断调用该迭代对象的__next__()方法拿到循环的下一个值，直到遇到StopIteration错误。
+		__getitem__:
+			表现得像list那样按照下标取出元素，实现__getitem__()方法。
+		__getattr__:
+			调用类的方法或属性时，不存在时报错，实现这__getattr__()方法后，动态返回一个属性。
+			class Student(object):
+
+    			def __init__(self):
+       				self.name = 'Michael'
+
+    			def __getattr__(self, attr):
+        			if attr=='score':
+            			return 99
+            >>> s = Student()
+			>>> s.name
+			'Michael'
+			>>> s.score
+			99
+			可以把一个类的所有属性和方法调用全部动态化处理，这种完全动态调用的特性有什么实际作用呢？作用就是可以针对完全动态的情况作调用。REST API
+		__call__:
+			任何类，只需要定义一个__call__()方法，就可以直接对实例进行调用
+				class Student(object):
+    				def __init__(self, name):
+        				self.name = name
+
+    				def __call__(self):
+        				print('My name is %s.' % self.name)
+        		>>> s = Student('Michael')
+				>>> s() # self参数不要传入
+					My name is Michael.
+			，怎么判断一个变量是对象还是函数呢？其实，更多的时候，我们需要判断一个对象是否能被调用，能被调用的对象就是一个Callable对象，比如函数和我们上面定义的带有__call__()的类实例：
+			>>> callable(Student())
+				True
+				通过callable()函数，我们就可以判断一个对象是否是“可调用”对象
+	枚举类：
+		为这样的枚举类型定义一个class类型，然后，每个常量都是class的一个唯一实例。Python提供了Enum类来实现这个功能
+		from enum import Enum
+
+		Month = Enum('Month', ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'))
+		value属性则是自动赋给成员的int常量，默认从1开始计数。
+
+如果需要更精确地控制枚举类型，可以从Enum派生出自定义类：
+
+from enum import Enum, unique
+
+@unique
+class Weekday(Enum):
+    Sun = 0 # Sun的value被设定为0
+    Mon = 1
+    Tue = 2
+    Wed = 3
+    Thu = 4
+    Fri = 5
+    Sat = 6
+@unique装饰器可以帮助我们检查保证没有重复值。
+		既可以用成员名称引用枚举常量，又可以直接根据value的值获得枚举常量
+		Enum可以把一组相关常量定义在一个class中，且class不可变，而且成员可以直接比较。
 
 
+	元类：
+		type()
+		动态语言和静态语言最大不同就是函数和类的定义，不是编译时定义的，而是运行时动态创建的。
+		要创建一个class对象，type()函数依次传入3个参数：
+			1.class的名称；
+			2.继承的父类集合，注意Python支持多重继承，如果只有一个父类，别忘了tuple的单元素写法；
+			3.class的方法名称与函数绑定，这里我们把函数fn绑定到方法名hello上。
+			通过type()函数创建的类和直接写class是完全一样的，因为Python解释器遇到class定义时，仅仅是扫描一下class定义的语法，然后调用type()函数创建出class。
 
+		metaclass:元类
+			当我们定义了类以后，就可以根据这个类创建出实例，所以：先定义类，然后创建实例。
+			但是如果我们想创建出类呢？那就必须根据metaclass创建出类，所以：先定义metaclass，然后创建类。
+			总会遇到需要通过metaclass修改类定义的。ORM就是一个典型的例子
+			ORM全称“Object Relational Mapping”，即对象-关系映射，就是把关系数据库的一行映射为一个对象，也就是一个类对应一个表，这样，写代码更简单，不用直接操作SQL语句。
 
-
-
+			metaclass是Python中非常具有魔术性的对象，它可以改变类创建时的行为。
