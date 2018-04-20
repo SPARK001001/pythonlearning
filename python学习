@@ -283,12 +283,841 @@ sorted(['bob', 'about', 'Zoo', 'Credit'], key=str.lower)
 
 
 
+2018.4.16
+返回函数   闭包
+	不需要立即求和，而是在后面的代码中，根据需要在计算
+	def lazy_sum(*args):
+    def sum():
+        ax = 0
+        for n in args:
+            ax = ax + n
+        return ax
+    return sum
+    在函数lazy_sum中又定义了函数sum，并且，内部函数sum可以引用外部函数lazy_sum的函数和局部变量，当lazy_sum返回函数sum时，相关参数和变量都保存在返回的函数中，
+    这种程序结构称为“闭包（closure）”
+    会发生的问题：
+    def count():
+    fs = []
+    for i in range(1, 4):
+        def f():
+             return i*i
+        fs.append(f)
+    return fs
+
+	f1, f2, f3 = count()
+
+	>>>f1() 9
+	>>>f2() 9
+	>>>f3() 9
+	都是9，原因在于返回的函数引用变量i,但它并非立刻执行，等到3个函数都返回时，他们所引用的变量i已经变成了3，因此最终结果为9.
+    返回闭包时，牢记一点：返回函数不要引用任何循环变量，或者后续会发生变化的变量
+
+    如果一定要引用循环变量？再创建一个函数，用该函数的参数绑定循环变量当前的值。
+    def count():
+    def f(j):
+        def g():
+            return j*j
+        return g
+    fs = []
+    for i in range(1, 4):
+        fs.append(f(i)) # f(i)立刻被执行，因此i的当前值被传入f()
+    return fs
+
+    >>> f1, f2, f3 = count()
+	>>> f1()
+	1
+	>>> f2()
+	4
+	>>> f3()
+	9
+
+	利用闭包返回一个计数器函数，每次调用他返回递增整数：
+	def createCounter():
+    s = [0]
+    def counter():
+        s[0] += 1
+        return s[0]
+    return counter
+
+	做些笔记：
+	1.内部函数一般无法修改外部函数的参数
+	2.想要修改需要声明 nonlocal
+	3.内部函数可以修改外部list中的元素
+
+2.匿名函数
+	匿名函数lambda x: x * x 实际上就是
+	def f(x):
+		return x * x
+	冒号前x表示函数参数；
+	限制：只能有一个表达式，不用写return，返回值就是该表达式的结果
+	好处：函数没名字，不用担心函数名冲突；匿名函数也是一个函数对象。
+
+3.装饰器
+	要增加函数的功能，又不想修改函数的定义，这种在代码运行期间动态增加功能的方式，称为“装饰器”（Decorator）
+
+一个完整的decorator的写法如下：
+import functools
+
+def log(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        print('call %s():' % func.__name__)
+        return func(*args, **kw)
+    return wrapper
 
 
+针对带参数的decorator：
+import functools
+
+def log(text):
+    def decorator(func):
+        @functools.wraps(func)#不加这一行的话调用now.__name__ 会显示wrapper,而不会显示now
+        def wrapper(*args, **kw):
+            print('%s %s():' % (text, func.__name__))
+            return func(*args, **kw)
+        return wrapper
+    return decorator
+
+@log('execute')
+def now():
+    print('2015-3-25')
+
+>>> now()
+execute now():
+2015-3-25
+
+4.偏函数
+	通过设定函数的默认值，可以降低调用函数的难度，偏函数也可以做到这一点；
+	functools.partial 就是帮助我们创建一个偏函数的。作用就是把一个函数的某些参数给固定住（也就是设置默认值，）
+	返回一个新的函数，调用这个新函数会更简单。
+	创建偏函数时，实际上可以接收函数对象、*args和**kw这3个参数，
+	当传入int2 = functools.partial(int, base=2)
+	int2('10010')
+	kw = { 'base': 2 }
+	int('10010', **kw)
+	当传入max2 = functools.partial(max, 10)实际上会把10作为*args的一部分自动加到左边
+	也就是max2(5, 6, 7)相当于args = (10, 5, 6, 7)
+	max(*args) 结果为10
+
+	当函数的参数个数太多，需要简化时，使用functools.partial可以创建一个新的函数，这个新函数可以固定住原函数的部分参数，从而在调用时更简单。
+	
+2018.4.17
+1.模块：
+	提高代码的课维护性；编写代码不必从零开始。
+	可以避免函数名和变量名冲突。但也要避免与内置函数名字冲突。（如系统自带sys模块，自己命名的模块就不可命名为sys.py，否则无法导入系统自带的sys模块）
+	为避免模块名冲突，Python引入按目录来组织模块的方法，称为”包“package。
+	注意，每一个包目录下都会有一个__init__.py的文件，这个文件必须存在，否则Python就把这个目录当成普通目录，而不是一个包。__init__.py本身是一个模块，他的模块名就是包名
+
+	创建自己的模块时，要注意：
+		模块名要遵循Python变量命名规范，不要使用中文、特殊字符；
+		模块名不要和系统模块名冲突，最好先查看系统是否已存在该模块，检查方法是在Python交互环境执行import abc，若成功则说明系统存在此模块。
+	作用域：
+		在Python中是通过_前缀来实现的private的
+		类似__xxx__这样的变量是特殊变量，可以被直接引用，但是有特殊用途。
+	安装第三方模块：
+		pip install Pillow
+		第三方库都会在Python官方的pypi.python.org网站注册
+		默认情况下，Python解释器会搜索当前目录、所有已安装的内置模块，和第三方模块，搜索路径存放在sys模块的path变量中：
+		import sys  sys.path
+		要添加自己的搜索目录，两种方法：
+			直接修改sys.path
+					import sys
+					sys.path.append('/')
+					在运行时修改，运行结束后失效
+			设置环境变量PYTHONPATH，该环境变量的内容会被自动添加到模块搜索路径中。
+2.面向对象编程OOP 封装 继承 多态
+	面向过程的程序吧计算机程序视为一系列命令集合，即一组函数的顺序执行，为了简化程序设计，面向过程把函数继续切分为子函数，即把大块函数切割成小块函数来降低系统的复杂度。
+	面向对象程序设计吧计算机程序视为一组对象的集合，而每个对象可以接收其他对象发过来的消息，并处理这些消息，计算机程序执行的就是一系列消息在各个对象之间的传递。
+	给对象发消息就是调用对象对应的关联函数，，我们称之为对象的方法。
+	面向对象的设计思想是抽象出class，根据class创建instance。
+	类和实例：
+		类可以起到模板的作用，可以在创建实例的时候，把一些我们认为必须绑定的属性强制填写进去，通过定义一个特殊的__init__方法。（两个下划线）
+		和普通函数相比，在类中定义的函数只有一点不同，就是第一个参数永远是实例变量self，但调用时，不用传递该参数。除此外，与普通函数美什么区别。仍可以用默认参数，可变参数，关键字参数，和命名关键字参数
+		封装：
+			好处：数据和逻辑被封装，调用容易，不需要知道内部实现的细节；可以给类增加新的方法；
+		和静态语言不同，Python允许对实例变量绑定任何数据，也就是说，对于两个实例变量，虽然他们都是同一个类的不同实例，但拥有的变量名称都可能不同。
+	访问限制： 可以使代码更加健壮。
+		要让内部属性不被外部访问，可以把属性名称前加两个下划线__，在Python中，实例的变量名如果以__开头，就变成了一个私有变量，只有内部可以访问，外部不可以访问。Python解释器对外把__name变量改成_Student__name或其他变量名（不同Python解释器可能改的不同）.
+		在方法中，可以对参数做检查，避免传入无效的参数，故有setter函数
+		在Python中，变量名类似__xxx__，双下划线开头结尾，是特殊变量，可以直接访问，不是private变量
+		以一个下划线开头的变量，外部可以访问，但约定，最好当成私有变量。
+	继承和多态：
+		继承：最大的好处就是获得了父类的全部功能；第二个好处就是需要我们队代码做一点改进。继承的另一个好处，多态
+		多态：调用方只管调用，不管细节，而当我们新增一个Animal的子类时，只要确保run()方法编写正确，不管原来的代码是如何调用的，这就是
+		著名的”开闭原则“：
+			对扩展开放:允许新增Animal子类
+			对修改封闭：不需要修改依赖Animal类型的run_twice()等函数。
+		def run_twice(animal):
+    		animal.run()
+    		animal.run()
+
+    	>>> run_twice(Animal())
+			Animal is running...
+			Animal is running...
+		>>> run_twice(Cat())
+			Cat is running...
+			Cat is running...
+		静态语言vs动态语言：
+			静态语言如java，如需要传入Animal类型，则传入对象必须是这类型或者他的子类，否则无法调用run()方法。
+			动态语言，不一定要传入Animal类型或其子类，只要保证传入对象有一个run()方法就可以了。这就是动态语言的“鸭子类型”，不要求严格的继承体系。
+			class Timer(object):
+    			def run(self):
+       				print('Start...')
+    获取对象信息：
+    	判断对象类型：使用type()函数
+    		>>> type('abc')==type('123')
+				True
+    	判断一个对象是否是函数怎么办？可以使用types模块中定义的常量
+    		>>> import types
+			>>> def fn():
+			...     pass
+			...
+			>>> type(fn)==types.FunctionType
+			True
+		对于class的继承关系来说，使用type()就很不方便。我们要判断class的类型，可以使用isinstance()函数
+			isinstance()判断的是一个对象是否是该类型本身，或者位于该类型的父继承链上。
+			能用type()判断的基本类型也可以用isinstance()判断：
+				>>> isinstance('a', str)
+					True
+			可以判断一个变量是否是某些类型中的一种，比如下面的代码就可以判断是否是list或者tuple：
+				>>> isinstance([1, 2, 3], (list, tuple))
+					True
+			总是优先使用isinstance()判断类型，可以将指定类型及其子类“一网打尽”
+		使用dir():
+			如果要获得一个对象的所有属性和方法，可以使用dir()函数，它返回一个包含字符串的list，比如，获得一个str对象的所有属性和方法
+			在len()函数内部，它自动去调用该对象的__len__()方法，所以，下面的代码是等价的：
+				>>> len('ABC')
+					3
+				>>> 'ABC'.__len__()
+					3
+		仅仅把属性和方法列出来是不够的，配合getattr()、setattr()以及hasattr()，我们可以直接操作一个对象的状态：
+			正确的用法的例子如下：
+
+			def readImage(fp):
+    			if hasattr(fp, 'read'):
+       				return readData(fp)
+  				return None
+			假设我们希望从文件流fp中读取图像，我们首先要判断该fp对象是否存在read方法，如果存在，则该对象是一个流，如果不存在，则无法读取。hasattr()就派上了用场。
+			请注意，在Python这类动态语言中，根据鸭子类型，有read()方法，不代表该fp对象就是一个文件流，它也可能是网络流，也可能是内存中的一个字节流，但只要read()方法返回的是有效的图像数据，就不影响读取图像的功能。
+	实例属性和类属性：
+		给实例绑定属性的方法是通过实例变量，或者通过self变量；
+		如果是类本身需要绑定一个属性，可以直接在class中定义属性，这种属性是类所有；但类的所有 实例都可以访问到。
+		在编写程序的时候，千万不要对实例属性和类属性使用相同的名字，因为相同名称的实例属性将屏蔽掉类属性，但是当你删除实例属性后，再使用相同的名称，访问到的将是类属性。
+		>>> class Student(object):
+		...     name = 'Student'
+		...
+		>>> s = Student() # 创建实例s
+		>>> print(s.name) # 打印name属性，因为实例并没有name属性，所以会继续查找class的name属性
+		Student
+		>>> print(Student.name) # 打印类的name属性
+		Student
+		>>> s.name = 'Michael' # 给实例绑定name属性
+		>>> print(s.name) # 由于实例属性优先级比类属性高，因此，它会屏蔽掉类的name属性
+		Michael
+		>>> print(Student.name) # 但是类属性并未消失，用Student.name仍然可以访问
+		Student
+		>>> del s.name # 如果删除实例的name属性
+		>>> print(s.name) # 再次调用s.name，由于实例的name属性没有找到，类的name属性就显示出来了
+		Student
+		实例属性属于各个实例所有，互不干扰；
+
+		类属性属于类所有，所有实例共享一个属性；
+
+		不要对实例属性和类属性使用相同的名字，否则将产生难以发现的错误。
+		例子：每创建一个实例，count加1
+		class Student(object):
+			count = 0#每次实例化对象的时候，只需init来为其绑定属性，不会执行类属性部分，即从类属性之后的部分开始运行的，故每次创建实例不会初始化为0
+			def __init__(self,name):
+				self.__name = name
+				Student.count = Student.count + 1#1、init方法是绑定实例的属性用的，不能调用类属性count，故要加Student。
+3.面向对象高级编程
+	使用__slots__:
+		当我们定义了一个class，创建了一个class的实例后，可以给该实例绑定任何属性和方法，这就是动态语言的灵活性。
+		但是，给一个实例绑定的方法，对另一个实例是不起作用的，为了给所有实例都绑定方法，可以给class绑定方法。
+		>>> def set_score(self, score):
+		...     self.score = score
+		...
+		>>> Student.set_score = set_score
+		给class绑定方法后，所有实例均可调用
+		>>> s.set_score(100)
+		>>> s.score
+			100
+		>>> s2.set_score(99)
+		>>> s2.score
+			99
+		通常情况下，上面的set_score方法可以直接定义在class中，但动态绑定允许我们在程序运行的过程中动态给class加上功能，这在静态语言中很难实现。
+		为了达到限制的目的，Python允许在定义class的时候，定义一个特殊的__slots__变量，来限制该class实例能添加的属性；
+		class Student(object):
+    		__slots__ = ('name', 'age') # 用tuple定义允许绑定的属性名称
+    	>>> s = Student() # 创建新的实例
+		>>> s.name = 'Michael' # 绑定属性'name'
+		>>> s.age = 25 # 绑定属性'age'
+		>>> s.score = 99 # 绑定属性'score'
+			Traceback (most recent call last):
+ 			File "<stdin>", line 1, in <module>
+			AttributeError: 'Student' object has no attribute 'score'
+		使用__slots__变量时，定义的属性仅对当前类实例起作用，对继承的子类是不起作用的。
+		除非在子类中也定义__slots__，这样，子类实例允许定义的属性就是自身的__slots__加上父类的__slots__
+	使用@property:
+		负责把一个方法编程属性调用的。广泛应用在类的定义中，可以让调用者写出简短的代码，同时保证对参数进行必要的检查，这样，程序运行时就减少了出错的可能性。
+		既能检查参数又能用类似属性这样简单的方式来访问类的变量。
+		
+		把一个getter方法变成属性，只需要加上@property就可以了，此时，@property本身又创建了另一个装饰器@score.setter，负责把一个setter方法变成属性赋值，于是，我们就拥有一个可控的属性操作
+
+		还可以定义只读属性，只定义getter方法，不定义setter方法就是一个只读属性：
+		class Student(object):
+
+   			@property
+    		def birth(self):
+        		return self._birth
+
+    		@birth.setter
+    		def birth(self, value):
+        		self._birth = value
+
+    		@property
+    		def age(self):
+        		return 2015 - self._birth
+    多重继承：
+    	通过多重继承，一个子类就可以获得多个父类的所有功能。Mixln是一种常见的设计（Java只允许单继承，不能用Mixln的设计）
+    	class Dog(Mammal, Runnable):
+    		pass
+    定制类：
+    	__str__   __repr__:
+    		怎么才能打印得好看呢？只需要定义好__str__()方法，返回一个好看的字符串就可以了：
+
+			>>> class Student(object):
+			...     def __init__(self, name):
+			...         self.name = name
+			...     def __str__(self):
+			...         return 'Student object (name: %s)' % self.name
+			...
+			>>> print(Student('Michael'))
+			Student object (name: Michael)
+		__iter__:
+			如果一个类想被用于for。。。in 循环，类似list或tuple那样，就必须实现一个__iter__()方法，该方法返回一个迭代对象，然后，Python的for循环就会不断调用该迭代对象的__next__()方法拿到循环的下一个值，直到遇到StopIteration错误。
+		__getitem__:
+			表现得像list那样按照下标取出元素，实现__getitem__()方法。
+		__getattr__:
+			调用类的方法或属性时，不存在时报错，实现这__getattr__()方法后，动态返回一个属性。
+			class Student(object):
+
+    			def __init__(self):
+       				self.name = 'Michael'
+
+    			def __getattr__(self, attr):
+        			if attr=='score':
+            			return 99
+            >>> s = Student()
+			>>> s.name
+			'Michael'
+			>>> s.score
+			99
+			可以把一个类的所有属性和方法调用全部动态化处理，这种完全动态调用的特性有什么实际作用呢？作用就是可以针对完全动态的情况作调用。REST API
+		__call__:
+			任何类，只需要定义一个__call__()方法，就可以直接对实例进行调用
+				class Student(object):
+    				def __init__(self, name):
+        				self.name = name
+
+    				def __call__(self):
+        				print('My name is %s.' % self.name)
+        		>>> s = Student('Michael')
+				>>> s() # self参数不要传入
+					My name is Michael.
+			，怎么判断一个变量是对象还是函数呢？其实，更多的时候，我们需要判断一个对象是否能被调用，能被调用的对象就是一个Callable对象，比如函数和我们上面定义的带有__call__()的类实例：
+			>>> callable(Student())
+				True
+				通过callable()函数，我们就可以判断一个对象是否是“可调用”对象
+	枚举类：
+		为这样的枚举类型定义一个class类型，然后，每个常量都是class的一个唯一实例。Python提供了Enum类来实现这个功能
+		from enum import Enum
+
+		Month = Enum('Month', ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'))
+		value属性则是自动赋给成员的int常量，默认从1开始计数。
+
+如果需要更精确地控制枚举类型，可以从Enum派生出自定义类：
+
+from enum import Enum, unique
+
+@unique
+class Weekday(Enum):
+    Sun = 0 # Sun的value被设定为0
+    Mon = 1
+    Tue = 2
+    Wed = 3
+    Thu = 4
+    Fri = 5
+    Sat = 6
+@unique装饰器可以帮助我们检查保证没有重复值。
+		既可以用成员名称引用枚举常量，又可以直接根据value的值获得枚举常量
+		Enum可以把一组相关常量定义在一个class中，且class不可变，而且成员可以直接比较。
 
 
+	元类：
+		type()
+		动态语言和静态语言最大不同就是函数和类的定义，不是编译时定义的，而是运行时动态创建的。
+		要创建一个class对象，type()函数依次传入3个参数：
+			1.class的名称；
+			2.继承的父类集合，注意Python支持多重继承，如果只有一个父类，别忘了tuple的单元素写法；
+			3.class的方法名称与函数绑定，这里我们把函数fn绑定到方法名hello上。
+			通过type()函数创建的类和直接写class是完全一样的，因为Python解释器遇到class定义时，仅仅是扫描一下class定义的语法，然后调用type()函数创建出class。
 
+		metaclass:元类
+			当我们定义了类以后，就可以根据这个类创建出实例，所以：先定义类，然后创建实例。
+			但是如果我们想创建出类呢？那就必须根据metaclass创建出类，所以：先定义metaclass，然后创建类。
+			总会遇到需要通过metaclass修改类定义的。ORM就是一个典型的例子
+			ORM全称“Object Relational Mapping”，即对象-关系映射，就是把关系数据库的一行映射为一个对象，也就是一个类对应一个表，这样，写代码更简单，不用直接操作SQL语句。
 
+			metaclass是Python中非常具有魔术性的对象，它可以改变类创建时的行为。
+
+2018.4.18
+	错误、调试和测试
+		错误处理：
+				Python内置了try。。。except...finally...错误处理机制
+				如果没有错误发生，可以在except语句块后面加一个else，当没有错误发生时，会自动执行else语句
+				Python的错误其实也是class，所有的错误类型都继承自BaseException，所以在使用except时需要注意的是，它不但捕获该类型的错误，还把其子类也“一网打尽”。
+				使用try...except捕获错误还有一个巨大的好处，就是可以跨越多层调用
+				解读错误信息是定位错误的关键
+		 		出错的时候，一定要分析错误的调用栈信息，才能定位错误的位置。
+		 	记录错误：
+		 		Python内置的logging模块可以非常容易的记录错误信息；
+		 	# err_logging.py
+
+					import logging
+
+					def foo(s):
+					    return 10 / int(s)
+
+					def bar(s):
+					    return foo(s) * 2
+
+					def main():
+					    try:
+					        bar('0')
+					    except Exception as e:
+					        logging.exception(e)
+
+					main()
+						print('END')
+				同样是出错，但程序打印完错误信息后会继续执行，并正常退出
+				通过配置，logging可以把错误记录到日志文件，方便事后排查
+			抛出错误：raise
+				因为错误是class，捕获一个错误就是捕获到该class的一个实例。
+				要抛出错误，首先根据需要，可以定义一个错误的class，选择好继承关系，然后，用raise语句抛出一个错误的实例
+				# err_raise.py
+				class FooError(ValueError):
+				    pass
+
+				def foo(s):
+				    n = int(s)
+				    if n==0:
+				        raise FooError('invalid value: %s' % s)
+				    return 10 / n
+
+				foo('0')
+				$ python3 err_raise.py 
+				Traceback (most recent call last):
+				  File "err_throw.py", line 11, in <module>
+				    foo('0')
+				  File "err_throw.py", line 8, in foo
+				    raise FooError('invalid value: %s' % s)
+				__main__.FooError: invalid value: 0
+							我们来看另一种错误处理的方式：
+							# err_reraise.py
+
+					def foo(s):
+					    n = int(s)
+					    if n==0:
+					        raise ValueError('invalid value: %s' % s)
+					    return 10 / n
+
+					def bar():
+					    try:
+					        foo('0')
+					    except ValueError as e:
+					        print('ValueError!')
+					        raise#重点
+
+							bar()
+						打印ValueError后，又把错误通过raise语句抛出去了，raise语句如果不带参数，就会把当前错误原样抛出。在except中raise一个error，还可以把一种类型的错误转化为另一种类型
+						Python内置的try...except...finally用来处理错误十分方便。出错时，会分析错误信息并定位错误发生的代码位置才是最关键的。
+
+						程序也可以主动抛出错误，让调用者来处理相应的错误。但是，应该在文档中写清楚可能会抛出哪些错误，以及错误产生的原因。
+		调试：
+			print():
+				简单直接粗暴有效；坏处是将来还得删除它；
+			断言：
+				凡是print()来辅助查看的地方，都可以用断言assert来替代
+							def foo(s):
+							    n = int(s)
+							    assert n != 0, 'n is zero!'
+							    return 10 / n
+
+							def main():
+								    foo('0')
+					assert的意思是，表达式n != 0应该是True，否则，根据程序运行的逻辑，后面的代码肯定会出错。
+
+					如果断言失败，assert语句本身就会抛出AssertionError：
+
+					$ python err.py
+					Traceback (most recent call last):
+					  ...
+					AssertionError: n is zero!
+				若到处充斥着assert和print（）相比也好不到那里去。不过启动Python解释器可以用-o参数来关闭assert。
+					$ python -O err.py
+					Traceback (most recent call last):
+					  ...
+					ZeroDivisionError: division by zero
+					关闭后，你可以把所有的assert语句当成pass来看。
+			logging：
+				把print()替换为logging是第3种方式，和assert比，logging不会抛出错误，而且可以输出到文件
+				import logging
+
+				s = '0'
+				n = int(s)
+				logging.info('n = %d' % n)
+				print(10 / n)
+				logging.info()就可以输出一段文本。
+				运行，发现除了ZeroDivisionError，没有任何信息。怎么回事？
+
+				别急，在import logging之后添加一行配置再试试：
+
+				import logging
+				logging.basicConfig(level=logging.INFO)
+				看到输出了：
+
+				$ python err.py
+				INFO:root:n = 0
+				Traceback (most recent call last):
+				  File "err.py", line 8, in <module>
+				    print(10 / n)
+				ZeroDivisionError: division by zero
+				这就是logging的好处，它允许你指定记录信息的级别，有debug，info，warning，error等几个级别，当我们指定level=INFO时，logging.debug就不起作用了。同理，指定level=WARNING后，debug和info就不起作用了。这样一来，你可以放心地输出不同级别的信息，也不用删除，最后统一控制输出哪个级别的信息。
+
+				logging的另一个好处是通过简单的配置，一条语句可以同时输出到不同的地方，比如console和文件。
+			pdb:
+				第4种方式是启动Python的调试器pdb，让程序以单步方式运行，可以随时查看运行状态
+				$ python -m pdb err.py
+				> /Users/michael/Github/learn-python3/samples/debug/err.py(2)<module>()
+				-> s = '0'
+				以参数-m pdb启动后，pdb定位到下一步要执行的代码-> s = '0'。输入命令l来查看代码：
+				输入命令n可以单步执行代码：
+				任何时候都可以输入命令p 变量名来查看变量：
+				输入命令q结束调试，退出程序：
+				理论上万能，但太麻烦，有一千行代码得敲很多次	
+			pdb.set_trace():
+				这个方法也是用pdb，但是不需要单步执行，我们只需要import pdb，然后，在可能出错的地方放一个pdb.set_trace()，就可以设置一个断点：
+				# err.py
+				import pdb
+
+				s = '0'
+				n = int(s)
+				pdb.set_trace() # 运行到这里会自动暂停
+				print(10 / n)
+				运行代码，程序会自动在pdb.set_trace()暂停并进入pdb调试环境，可以用命令p查看变量，或者用命令c继续运行：
+				这个方式比直接启动pdb单步调试效率要高很多，但也高不到哪去
+			IDE
+				如果要比较爽地设置断点、单步执行，就需要一个支持调试功能的IDE。
+			写程序最痛苦的事情莫过于调试，程序往往会以你意想不到的流程来运行，你期待执行的语句其实根本没有执行，这时候，就需要调试了。
+
+			虽然用IDE调试起来比较方便，但是最后你会发现，logging才是终极武器。
+		单元测试：
+			测试驱动开发”（TDD：Test-Driven Development）
+			单元测试是用来对一个模块、一个函数或者一个类来进行正确性检验的测试工作。
+			以测试为驱动的开发模式最大的好处就是确保一个程序模块的行为符合我们设计的测试用例
+			为了编写单元测试，我们需要引入Python自带的unittest模块
+			编写单元测试时，我们需要编写一个测试类，从unittest.TestCase继承。
+
+			以test开头的方法就是测试方法，不以test开头的方法不被认为是测试方法，测试的时候不会被执行。
+			运行单元测试：
+				最简单的运行方式是在mydict_test.py的最后加上两行代码：
+
+					if __name__ == '__main__':
+					    unittest.main()
+				另一种方法是在命令行通过参数-m unittest直接运行单元测试：
+
+					$ python -m unittest mydict_test
+					.....
+				可以在单元测试中编写两个特殊的setUp()和tearDown()方法。这两个方法会分别在每调用一个测试方法的前后分别被执行。
+		文档测试：
+			当模块正常导入时，doctest不会被执行。只有在命令行直接运行时，才执行doctest
+			doctest非常有用，不但可以用来测试，还可以直接作为示例代码。通过某些文档生成工具，就可以自动把包含doctest的注释提取出来。用户看文档的时候，同时也看到了doctest。
+			当模块正常导入时，doctest不会被执行。只有在命令行直接运行时，才执行doctest。所以，不必担心doctest会在非测试环境下执行。
+			让我们用doctest来测试上次编写的Dict类：
+
+			# mydict2.py
+			class Dict(dict):
+			    '''
+			    Simple dict but also support access as x.y style.
+
+			    >>> d1 = Dict()
+			    >>> d1['x'] = 100
+			    >>> d1.x
+			    100
+			    >>> d1.y = 200
+			    >>> d1['y']
+			    200
+			    >>> d2 = Dict(a=1, b=2, c='3')
+			    >>> d2.c
+			    '3'
+			    >>> d2['empty']
+			    Traceback (most recent call last):
+			        ...
+			    KeyError: 'empty'
+			    >>> d2.empty
+			    Traceback (most recent call last):
+			        ...
+			    AttributeError: 'Dict' object has no attribute 'empty'
+			    '''
+			    def __init__(self, **kw):
+			        super(Dict, self).__init__(**kw)
+
+			    def __getattr__(self, key):
+			        try:
+			            return self[key]
+			        except KeyError:
+			            raise AttributeError(r"'Dict' object has no attribute '%s'" % key)
+
+			    def __setattr__(self, key, value):
+			        self[key] = value
+
+			if __name__=='__main__':
+			    import doctest
+			    doctest.testmod()
+	IO编程：
+		涉及到数据交换的地方，通常是磁盘，网络等，就需要io接口
+		通常，程序完成io操作会有input和output两个数据流。
+		Input Stream就是数据从外面（磁盘、网络）流进内存，Output Stream就是数据从内存流到外面去。
+		由于CPU和内存的速度远远高于外设的速度，所以，在IO编程中，就存在速度严重不匹配的问题。
+			有两种方法：同步IO，异步IO。
+				第一种是CPU等着，也就是程序暂停执行后续代码，等100M的数据在10秒后写入磁盘，再接着往下执行，这种模式称为同步IO；
+				另一种方法是CPU不等待，只是告诉磁盘，“您老慢慢写，不着急，我接着干别的事去了”，于是，后续代码可以立刻接着执行，这种模式称为异步IO。
+			使用异步IO来编写程序性能会远远高于同步IO，但是异步IO的缺点是编程模型复杂。
+		文件读写：
+			读：
+				>>> f = open('/Users/michael/test.txt', 'r')#默认读取文本文件，并且是utf-8编码的文本文件
+				>>> f.read()
+				'Hello, world!'
+				>>>f.close()
+				由于文件读写时都有可能产生IOError，一旦出错，后面的f.close()就不会调用。所以，为了保证无论是否出错都能正确地关闭文件，我们可以使用try ... finally来实现
+				Python引入了with语句来自动帮我们调用close()方法：
+				with open('/path/to/file', 'r') as f:
+				    print(f.read())
+				调用read()会一次性读取文件的全部内容;如果文件很小，read()一次性读取最方便；如果不能确定文件大小，反复调用read(size)比较保险
+				调用readline()可以每次读取一行内容
+				调用readlines()一次读取所有内容并按行返回list;如果是配置文件，调用readlines()最方便
+				file-like Object
+					像open()函数返回的这种有个read()方法的对象，在Python中统称为file-like Object。除了file外，还可以是内存的字节流，网络流，自定义流等等。file-like Object不要求从特定类继承，只要写个read()方法就行。
+
+					StringIO就是在内存中创建的file-like Object，常用作临时缓冲。
+				要读取二进制文件，比如图片、视频等等，用'rb'模式打开文件即可：
+					>>> f = open('/Users/michael/test.jpg', 'rb')
+				要读取非UTF-8编码的文本文件，需要给open()函数传入encoding参数，例如，读取GBK编码的文件：
+					>>> f = open('/Users/michael/gbk.txt', 'r', encoding='gbk')
+					遇到有些编码不规范的文件，你可能会遇到UnicodeDecodeError，因为在文本文件中可能夹杂了一些非法编码的字符。遇到这种情况，open()函数还接收一个errors参数，表示如果遇到编码错误后如何处理。最简单的方式是直接忽略：
+					>>> f = open('/Users/michael/gbk.txt', 'r', encoding='gbk', errors='ignore')
+			写文件：
+				写文件和读文件是一样的，唯一区别是调用open()函数时，传入标识符'w'或者'wb'表示写文本文件或写二进制文件：
+					>>> f = open('/Users/michael/test.txt', 'w')
+					>>> f.write('Hello, world!')
+					>>> f.close()
+					当我们写文件时，操作系统往往不会立刻把数据写入磁盘，而是放到内存缓存起来，空闲的时候再慢慢写入。只有调用close()方法时，操作系统才保证把没有写入的数据全部写入磁盘。忘记调用close()的后果是数据可能只写了一部分到磁盘，剩下的丢失了。所以，还是用with语句来得保险：
+					with open('/Users/michael/test.txt', 'w') as f:
+	    				f.write('Hello, world!')
+	    			要写入特定编码的文本文件，请给open()函数传入encoding参数，将字符串自动转换成指定编码。
+	    			以'w'模式写入文件时，如果文件已存在，会直接覆盖（相当于删掉后新写入一个文件）。如果我们希望追加到文件末尾怎么办？可以传入'a'以追加（append）模式写入。
+	    		在Python中，文件读写是通过open()函数打开的文件对象完成的。使用with语句操作文件IO是个好习惯。
+	    StingIO和BytesIO:
+	    	StringIO顾名思义就是在内存中读写str。
+
+				要把str写入StringIO，我们需要先创建一个StringIO，然后，像文件一样写入即可：
+
+				>>> from io import StringIO
+				>>> f = StringIO()
+				>>> f.write('hello')
+				5
+				>>> f.write(' ')
+				1
+				>>> f.write('world!')
+				6
+				>>> print(f.getvalue())
+				hello world!
+				getvalue()方法用于获得写入后的str。
+			要读取StringIO，可以用一个str初始化StringIO，然后，像读文件一样读取：
+
+				>>> from io import StringIO
+				>>> f = StringIO('Hello!\nHi!\nGoodbye!')
+				>>> while True:
+				...     s = f.readline()
+				...     if s == '':
+				...         break
+				...     print(s.strip())
+				...
+				Hello!
+				Hi!
+				Goodbye!
+			BytesIO
+				StringIO操作的只能是str，如果要操作二进制数据，就需要使用BytesIO。
+
+				BytesIO实现了在内存中读写bytes，我们创建一个BytesIO，然后写入一些bytes：
+
+				>>> from io import BytesIO
+				>>> f = BytesIO()
+				>>> f.write('中文'.encode('utf-8'))
+				6
+				>>> print(f.getvalue())
+				b'\xe4\xb8\xad\xe6\x96\x87'
+				请注意，写入的不是str，而是经过UTF-8编码的bytes。
+
+				和StringIO类似，可以用一个bytes初始化BytesIO，然后，像读文件一样读取：
+			StringIO和BytesIO是在内存中操作str和bytes的方法，使得和读写文件具有一致的接口
+
+				>>> from io import BytesIO
+				>>> f = BytesIO(b'\xe4\xb8\xad\xe6\x96\x87')
+				>>> f.read()
+					b'\xe4\xb8\xad\xe6\x96\x87'
+		操作文件和目录：
+			>>> import os
+				>>> os.name # 操作系统类型
+				'posix'
+			要获取详细的系统信息，可以调用uname()函数：
+				>>> os.uname()
+			在操作系统中定义的环境变量，全部保存在os.environ这个变量中，可以直接查看：
+				>>> os.environ
+			要获取某个环境变量的值，可以调用os.environ.get('key')：
+			查看、创建和删除目录可以这么调用：
+
+				# 查看当前目录的绝对路径:
+				>>> os.path.abspath('.')
+				'/Users/michael'
+				# 在某个目录下创建一个新目录，首先把新目录的完整路径表示出来:
+				>>> os.path.join('/Users/michael', 'testdir')
+				'/Users/michael/testdir'
+				# 然后创建一个目录:
+				>>> os.mkdir('/Users/michael/testdir')
+				# 删掉一个目录:
+				>>> os.rmdir('/Users/michael/testdir')
+			把两个路径合成一个时，不要直接拼字符串，而要通过os.path.join()函数，这样可以正确处理不同操作系统的路径分隔符
+			同样的道理，要拆分路径时，也不要直接去拆字符串，而要通过os.path.split()函数，这样可以把一个路径拆分为两部分，后一部分总是最后级别的目录或文件名：
+			>>> os.path.split('/Users/michael/testdir/file.txt')
+				('/Users/michael/testdir', 'file.txt')
+			os.path.splitext()可以直接让你得到文件扩展名，很多时候非常方便
+			>>> os.path.splitext('/path/to/file.txt')
+				('/path/to/file', '.txt')
+			这些合并、拆分路径的函数并不要求目录和文件要真实存在，它们只对字符串进行操作。
+			假定当前目录下有一个test.txt文件：
+
+			# 对文件重命名:
+			>>> os.rename('test.txt', 'test.py')
+			# 删掉文件:
+			>>> os.remove('test.py')
+			但是复制文件的函数居然在os模块中不存在！原因是复制文件并非由操作系统提供的系统调用。幸运的是shutil模块提供了copyfile()的函数，你还可以在shutil模块中找到很多实用函数，它们可以看做是os模块的补充。
+				要列出所有的.py文件，也只需一行代码：
+
+			>>> [x for x in os.listdir('.') if os.path.isfile(x) and os.path.splitext(x)[1]=='.py']
+			['apis.py', 'config.py', 'models.py', 'pymonitor.py', 'test_db.py', 'urls.py', 'wsgiapp.py']
+		Python的os模块封装了操作系统的目录和文件操作，要注意这些函数有的在os模块中，有的在os.path模块中。
+
+		序列化：
+			在程序运行的过程中，所有的变量都是在内存中，可以随时修改变量，但是一旦程序结束，变量所占用的内存就被操作系统全部回收。
+			我们把变量从内存中变成可存储或传输的过程称之为序列化，在Python中叫pickling，在其他语言中也被称之为serialization，marshalling，flattening等等，都是一个意思。
+			把变量内容从序列化的对象重新读到内存里称之为反序列化，即unpickling
+			Python提供了pickle模块来实现序列化。
+		JSON：
+			如果我们要在不同的编程语言之间传递对象，就必须把对象序列化为标准格式，比如XML，但更好的方法是序列化为JSON，因为JSON表示出来就是一个字符串，可以被所有语言读取，也可以方便地存储到磁盘或者通过网络传输。JSON不仅是标准格式，并且比XML更快，而且可以直接在Web页面中读取，非常方便。
+			Python内置的json模块提供了非常完善的Python对象到JSON格式的转换。我们先看看如何把Python对象变成一个JSON：
+				>>> import json
+				>>> d = dict(name='Bob', age=20, score=88)
+				>>> json.dumps(d)
+				'{"age": 20, "score": 88, "name": "Bob"}'
+			dumps()方法返回一个str，内容就是标准的JSON。
+			要把JSON反序列化为Python对象，用loads()或者对应的load()方法，前者把JSON的字符串反序列化，后者从file-like Object中读取字符串并反序列化：
+
+			>>> json_str = '{"age": 20, "score": 88, "name": "Bob"}'
+			>>> json.loads(json_str)
+			{'age': 20, 'score': 88, 'name': 'Bob'}
+			由于JSON标准规定JSON编码是UTF-8，所以我们总是能正确地在Python的str与JSON的字符串之间转换。
+		JSON进阶：
+			把class实例对象s序列化为json：
+				print(json.dumps(s,default=lambda obj: obj.__dict__))
+			如果我们要把JSON反序列化为一个Student对象实例，loads()方法首先转换出一个dict对象，然后，我们传入的object_hook函数负责把dict转换为Student实例：
+				def dict2student(d):
+				    return Student(d['name'], d['age'], d['score'])
+				运行结果如下：
+
+				>>> json_str = '{"age": 20, "score": 88, "name": "Bob"}'
+				>>> print(json.loads(json_str, object_hook=dict2student))
+				<__main__.Student object at 0x10cd3c190>
+				打印出的是反序列化的Student实例对象
+		Python语言特定的序列化模块是pickle，但如果要把序列化搞得更通用、更符合Web标准，就可以使用json模块。
+		json模块的dumps()和loads()函数是定义得非常好的接口的典范。当我们使用时，只需要传入一个必须的参数。但是，当默认的序列化或反序列机制不满足我们的要求时，我们又可以传入更多的参数来定制序列化或反序列化的规则，既做到了接口简单易用，又做到了充分的扩展性和灵活性。
+
+2018.4.19
+	进程和线程：
+		现代操作系统比如Mac OS X，UNIX，Linux，Windows等，都是支持“多任务”的操作系统。
+		什么叫“多任务”呢？简单地说，就是操作系统可以同时运行多个任务。
+		多任务的实现方式有3种：
+			多进程模式
+			多线程模式
+			多进程+多线程模式
+		线程是最小的执行单元，而进程由至少一个线程组成。如何调度进程和线程，完全由操作系统决定，程序不能决定什么时候执行，执行多长时间
+		多进程和多线程程序涉及到同步、数据共享的问题，编写起来更复杂
+	多进程：
+		fork：
+			Unix/Linux操作系统提供了一个fork()系统调用，它非常特殊；调用一次，返回两次，因为操作系统自动把当前进程（称为父进程）复制了一份（称为子进程），然后，分别在父进程和子进程内返回；
+			子进程永远返回0，父进程返回子进程的ID；一个父进程可以fork出很多子进程，一个父进程要记下每个子进程的 ID，而子进程只要调用getppid()就可以拿到父进程的ID；
+			import os
+
+			print('Process (%s) start...' % os.getpid())
+			# Only works on Unix/Linux/Mac:
+			pid = os.fork()
+			if pid == 0:
+			    print('I am child process (%s) and my parent is %s.' % (os.getpid(), os.getppid()))
+			else:
+			    print('I (%s) just created a child process (%s).' % (os.getpid(), pid))
+			运行结果如下：
+
+			Process (876) start...
+			I (876) just created a child process (877).
+			I am child process (877) and my parent is 876.
+			有了fork调用，一个进程在接到新任务时就可以复制出一个子进程来处理新任务，常见的Apache服务器就是由父进程监听端口，每当有新的http请求时，就fork出子进程来处理新的http请求。
+			由于Windows没有fork调用，上面的代码在Windows上无法运行
+		multiprocessing模块：
+			该模块是跨平台版本的多进程模块。multiprocessing模块提供了一个Process类来代表一个进程对象。
+			from multiprocessing import Process
+			import os
+
+				# 子进程要执行的代码
+				def run_proc(name):
+				    print('Run child process %s (%s)...' % (name, os.getpid()))
+
+				if __name__=='__main__':
+				    print('Parent process %s.' % os.getpid())
+				    p = Process(target=run_proc, args=('test',))
+				    print('Child process will start.')
+				    p.start()
+				    p.join()
+				    print('Child process end.')
+				执行结果如下：
+
+				Parent process 928.
+				Process will start.
+				Run child process test (929)...
+				Process end.
+				创建子进程时，只需要传入一个执行函数和函数的参数，创建一个Process实例，用start()方法启动，这样创建进程比fork()还要简单。
+
+				join()方法可以等待子进程结束后再继续往下运行，通常用于进程间的同步。
+		Pool:
+			如果要启动大量的子进程，可以用进程池的方式批量创建子进程。
+			对Pool对象调用join()方法会等待所有子进程执行完毕，调用join()之前必须先调用close()，调用close()之后就不能继续添加新的Process了。
+		子进程：
+			子进程并不是自身，而是一个外部进程，我们创建子进程后，还要控制子进程的输入和输出
+			subprocess模块可以让我们很方便的启动一个子进程，然后控制其输入输出
+			如果子进程还要输入，则可以通过communicate（）方法输入
+		进程间通信：
+			python的multiprocessing模块包装了底层的机制，提供了Queue、Pipes等多种方式来交换数据。
+			在Unix/Linux下，multiprocessing模块封装了fork()调用，使我们不需要关注fork()的细节。由于Windows没有fork调用，因此，multiprocessing需要“模拟”出fork的效果，父进程所有Python对象都必须通过pickle序列化再传到子进程去，所有，如果multiprocessing在Windows下调用失败了，要先考虑是不是pickle失败了。
 
 
 
