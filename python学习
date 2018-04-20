@@ -276,7 +276,7 @@ s='123'
 s[::-1] = '321'
 
 sorted()函数
-orted(['bob', 'about', 'Zoo', 'Credit'], key=str.lower)
+sorted(['bob', 'about', 'Zoo', 'Credit'], key=str.lower)
 ['about', 'bob', 'Credit', 'Zoo']
 >>> sorted(['bob', 'about', 'Zoo', 'Credit'], key=str.lower, reverse=True)
 ['Zoo', 'Credit', 'bob', 'about']
