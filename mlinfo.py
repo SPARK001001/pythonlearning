@@ -41,6 +41,7 @@ def cpu_stat():
         sys_us = sys_total - sys_idle
         cpu_use= (float(sys_us) / sys_total) * 100
         return cpu_use 
+#磁盘使用率
 def disk_stat():
         import commands
         f = commands.getstatusoutput('df -hl | grep ^/dev/*')
