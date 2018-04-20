@@ -1,32 +1,21 @@
 #!/usr/bin/env python3
 # _*_ coding:utf-8 _*_
-class Screen(object):
-	@property
-	def width(self):
-		return self._width
-	@width.setter
-	def width(self,width):
-		self._width = width
+from multiprocessing import Pool
+import os, time, random
 
-	@property
-	def height(self):
-		return self._height
-	@height.setter
-	def height(self,height):
-		self._height = height
+def long_time_task(name):
+    print('Run task %s (%s)...' % (name, os.getpid()))
+    start = time.time()
+    time.sleep(random.random() * 3)
+    end = time.time()
+    print('Task %s runs %0.2f seconds.' % (name, (end - start)))
 
-	@property
-	def resolution(self):
-		return self._height * self._width
-
-	
-
-# 测试:
-s = Screen()
-s.width = 1024
-s.height = 768
-print('resolution =', s.resolution)
-if s.resolution == 786432:
-    print('测试通过!')
-else:
-    print('测试失败!')
+if __name__=='__main__':
+    print('Parent process %s.' % os.getpid())
+    p = Pool(3)
+    for i in range(5):
+        p.apply_async(long_time_task, args=(i,))
+    print('Waiting for all subprocesses done...')
+    p.close()
+    p.join()
+    print('All subprocesses done.')
