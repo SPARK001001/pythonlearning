@@ -68,11 +68,15 @@ if __name__ == "__main__":
         cpu_use = cpu_stat()
         disk_use = disk_stat()
         d = {}
-        d['time'] = str(datetime.now())
+        #d['time'] = str(datetime.now())
         d['mem_use'] = float(mem_use)
         d['cpu_use'] = float(cpu_use)
         d = dict(d,**disk_use)
         json_log = json.dumps(d)
 
         with open('/root/test/catchinfo_log','a') as f:
-                f.write(json_log+'\n')
+                f.write(str(datetime.now())+' '+json_log+'\n')
+
+3.熟悉   wc ,cut ,awk ,sort ,uqic ,tail ,head ,tail -f ,du ,df ,date ,time
+        dict ,set ,list curd+iter
+        range /xrange区别

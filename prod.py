@@ -2,3 +2,4 @@
 from functools import reduce
 def prod(L):
 	return reduce(lambda x)
+print 1
