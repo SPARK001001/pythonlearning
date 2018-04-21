@@ -77,6 +77,6 @@ if __name__ == "__main__":
         with open('/root/test/catchinfo_log','a') as f:
                 f.write(str(datetime.now())+' '+json_log+'\n')
 
-3.熟悉   wc ,cut ,awk ,sort ,uqic ,tail ,head ,tail -f ,du ,df ,date ,time
+3.2018.4.21熟悉   wc ,cut ,awk ,sort ,uqic ,tail ,head ,tail -f ,du ,df ,date ,time
         dict ,set ,list curd+iter
-        range /xrange区别
+        range /xrange区别 2018.4.25号前完成
