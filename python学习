@@ -1191,3 +1191,134 @@ class Weekday(Enum):
 				('010', '12345')
 				>>> re_telephone.match('010-8086').groups()
 				('010', '8086')
+2018.4.22
+	datetime:
+		获取当前日期：
+			from datetime import datetime
+			now = datetime.now()
+			print(now)
+		获取指定日期和时间：
+			from datetime import datetime 
+			dt = datetime(2018,4,22,19,12,20)#用指定日期时间创建datetime
+			print(dt)#2018-04-22 19:12:20
+		datetime 转换为timestamp:
+			timestamp的值与时区没关系，全球各地计算机任意时刻timestamp完全一样，timestamp一确定，其UTC时间就确定了，转换到任意时区的时间就确定
+			from datetime import datetime
+			dt = datetime(2015,4,19,12,20)
+			dt.timestamp()#把datetime转换为timestamp 1429417200.0
+		timestamp转换为datetime:
+			使用datetime提供的fromtimestamp()方法
+			t = 1429417200.0
+			t1 = datetime.fromtimestamp(t)#本地时间
+			print(t1)#2015-04-19 12:20:00
+			t2 = datetime.utcfromtimestamp(t)#UTC时间
+			print(t2)#2015-04-19 04:20:00
+		str 转换为datetime:
+			使用datetime.strptime()实现
+			from datetime import datetime
+			cday = datetime.strptime('2015-6-1 18:19:59','%Y-%m-%d %H:%M:%S')
+			print(cday)#2015-06-01 18:19:59
+		datetime 转换为 str:
+			使用strftime()实现
+			now = datetime.now()
+			print(now.strftime('%a,%b %d %H:%M'))#Mon, May 05 16:28
+		datetime加减：
+			加减可以直接用+和-运算符，不过需要导入timedelta这个类：
+			from datetime import datetime, timedelta
+			now = datetime.now()
+			now#datetime.datetime(2015, 5, 18, 16, 57, 3, 540997)
+			now + timedelta(hours=10)#datetime.datetime(2015, 5, 19, 2, 57, 3, 540997)
+			now + timedelta(days=2, hours=12)#datetime.datetime(2015, 5, 21, 4, 57, 3, 540997)
+		本地时间转换为UTF时间：
+			本地时间是指系统设定时区的时间，例如北京时间是UTC+8:00时区的时间，而UTC时间指UTC+0:00时区的时间
+			一个datetime类型有一个时区属性 tzinfo,但是默认为None，所以无法区分这个datetime到底是哪个时区，除非强行给datetime设置一个时区：
+			from datetime import datetime ,timedelta,timezone
+			tz_utc_8 = timezone(timedelta(hours=8))#创建时区UTC+8:00
+			now = datetime.now()
+			now#datetime.datetime(2015, 5, 18, 17, 2, 10, 871012)
+			dt = now.replace(tzinfo=tz_utc_8)#强制设置为utc+8:00
+			dt #datetime.datetime(2015, 5, 18, 17, 2, 10, 871012, tzinfo=datetime.timezone(datetime.timedelta(0, 28800)))
+		时区转换：
+			可以通过 utcnow()拿到当前时间，再转换为任意时区的时间
+			utc_dt = datetime.utcnow().replace(tzinfo=timezone.utc)# 拿到UTC时间，并强制设置时区为UTC+0:00:
+			print(utc_dt)#2015-05-18 09:05:12.377316+00:00
+			bj_dt = utc_dt.astimezone(timezone(timedelta(hours=8)))#astimezone()将转换时区为北京时间
+			print(bj_dt)2015-05-18 17:05:12.377316+08:00
+		datime表示的时间需要时区信息才能确定一个特定的时间，否则只能视为本地时间
+		如果要存储datetime，最佳的方法是将其转换为timestamp再存储，因为timestamp的值与时区完全无关
+	collections:
+		namedtuple:
+			是一个函数，用来创建一个自定义的tuple对象，并且规定了tuple元素的个数，并且可以用属性而不是索引来引用tuple的某个元素
+			from collections import namedtuple
+			Point = namedtuple('Point',['x','y'])
+			p = Point(1,2)
+			p.x#1
+			p.y#2
+		deque:
+			使用list来存储数据，是为了高效实现插入和删除操作的双向列表，适合用于队列和栈
+			from collections import deque
+			q = deque(['a','b','c'])
+			q.append('x')
+			q.appendleft('y')
+			q#deque(['y','a','b','c','x'])
+		defaultdict:
+			使用dict时，引用的key不在的话，就会抛出keyerror,返回默认值，用defaultdict
+			from collections import defaultdict
+			dd = defaultdict(lambda: 'N/A')#默认值用函数返回，函数在常见defaultdict对象时传入
+			dd['key']#'N/A'
+		OrderedDict:
+			使用dict时，key是无序的，在对dict做迭代时，无法确定key的顺序
+			要保持key的顺序，可以用OrderedDict,key会按照插入的顺序排列，不是key本身排序
+			from collections import OrderedDict
+			od = OrderedDict()
+			od['z'] = 1
+			od['y'] = 2
+			od['x'] = 3
+			list(od.keys())#['z','y','x']
+			OrderedDict可以实现一个fifo的dict，当容量超出限制时，先删除最早添加的key
+		Counter:
+			是一个简单的计数器，可以统计字符出现的个数,是dict的一个子类
+			from collections import Counter
+			c = Counter()
+			for ch in 'programming':
+				c[ch] = c[ch] + 1
+			c#Counter({'g': 2, 'm': 2, 'r': 2, 'a': 1, 'i': 1, 'o': 1, 'n': 1, 'p': 1})
+	base64:
+		Base64是一种用64个字符来表示任意二进制数据的方法
+		Base64是一种最常见的二进制编码方法
+		Base64是一种任意二进制到文本字符串的编码方法，常用于在URL、cookie、网页传输少量二进制数据
+	struct:
+		用来解决bytes和其他二进制数据类型的转换
+		struct的pack函数把任意数据类型变成bytes
+		>>> import struct
+		>>> struct.pack('>I', 10240099)
+		b'\x00\x9c@c'
+		>表示字节顺序是big-endian，也就是网络序，I表示4字节无符号整数。
+	hashlib:
+		摘要算法简介：
+		python的hashlib提供了常见的摘要算法如MD5，SHA1等
+		摘要算法：又称为哈希算法、散列算法，它通过一个函数（单向函数），把任意长度的数据转换为一个长度固定的数据串（通常用16进制的字符串表示）
+		MD5：
+			最常见的摘要算法，速度很快，生成结果是固定的128bit字节，通常用一个32位16进制字符串来表示
+			import hashlib
+			md5 = hashlib.md5()
+			md5.update('how to use md5 in python hashlib?'.encode('utf-8'))
+			print(md5.hexdigest())#d26a53750bc40b38b65a520292f69306
+			也可以分快多次调用update（），计算结果一样
+		SHA1：
+			import hashlib
+
+			sha1 = hashlib.sha1()
+			sha1.update('how to use sha1 in '.encode('utf-8'))
+			sha1.update('python hashlib?'.encode('utf-8'))
+			print(sha1.hexdigest())
+			结果是160bit字节，通常用40位的16进制字符串表示
+		摘要算法应用：
+			存储用户密码，不存储用户的明文口令，而是存储用户口令的摘要
+			常用口令的MD5值很容易被计算出来，故需要原始口令加一个复杂字符串来实现，俗称“加盐”
+			
+			摘要算法在很多地方都有广泛的应用。要注意摘要算法不是加密算法，不能用于加密（因为无法通过摘要反推明文），只能用于防篡改，但是它的单向计算特性决定了可以在不存储明文口令的情况下验证用户口令。
+
+
+
+
