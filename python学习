@@ -1192,6 +1192,7 @@ class Weekday(Enum):
 				>>> re_telephone.match('010-8086').groups()
 				('010', '8086')
 2018.4.22
+python 常见内建模块：
 	datetime:
 		获取当前日期：
 			from datetime import datetime
@@ -1318,6 +1319,118 @@ class Weekday(Enum):
 			常用口令的MD5值很容易被计算出来，故需要原始口令加一个复杂字符串来实现，俗称“加盐”
 			
 			摘要算法在很多地方都有广泛的应用。要注意摘要算法不是加密算法，不能用于加密（因为无法通过摘要反推明文），只能用于防篡改，但是它的单向计算特性决定了可以在不存储明文口令的情况下验证用户口令。
+2018.4.23
+	hmac:
+		和我们自定义的加salt算法不同，Hmac算法针对所有哈希算法都通用，无论是MD5还是SHA-1.采用Hmac替代我们自己的salt算法，可以使程序算法更标准化，也更安全。
+		import hmac
+		message = b'Hello,world!'
+		key = b'secret'
+		h = hmac.new(key,message,digestmod='MD5')
+		h.hexdigest()#'fa4ee7d173f2d97ee79022d1a7355bcf'
+		可见使用hmac和普通的hash算法非常类似。注意传入的key和message都是bytes类型，str类型需要先编码为bytes.
+		python内置的hmac模块实现了标准的hmac算法，它利用一个key对message计算’杂凑‘后的哈hash,使用 hmac算法比标准hash算法更安全，因为针对相同的message，不同的key会产生不同的hash.
+	itertools:
+		itertools模块提供了非常有用的用于操作迭代对象的函数
+		itertools提供的几个无限迭代器：
+			count()会创建一个无限的迭代器
+			cycle()会把传入的一个序列无限重复下去
+			repeat()把一个元素无限重复下去，不过提供的第二个参数就可以限定重复次数
+			无限序列只有在for迭代是才会无限的迭代下去，
+			通过takewhile()等函数根据条件判断来截取一个有限的序列
+			import itertools
+			natuals = itertools.count(1)#itertools.count(1,2)创建奇数序列
+			ns = itertools.takewhile(lambda x: x <= 10,natuals)
+			list(ns)#[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+		itertools提供的几个迭代器操作函数更有用：
+			chain()可以把一组迭代对象串联起来，形成一个更大的迭代器
+			groupby()把迭代器中相邻的重复元素挑出来放在一起：
+			for key ,group in itertools.groupby('AaABBbCCAaA',lambda c : c.upper()):
+				print(key,list(group))
+			A ['A', 'a', 'A']
+			B ['B', 'B', 'a']
+			C ['C', 'C']
+			A ['A', 'a', 'A']
+		itertools模块提供的全部是处理迭代功能的函数，它们的返回值不是list,而是Iterator,只有用for循环迭代的时候才真正计算。
+	contextlib:
+		关闭文件资源：
+			try ... finally
+			with 语句
+		并不是只有open()函数返回的fp对象才能使用with语句，实际上，任何对象只要实现了上下文管理，就可以用于with语句
+		实现上下文管理是通过__enter__和__exit__这两个方法实现的
+
+		@contextmanager
+			编写__enter__和__exit__仍然很繁琐，因此Python的标准库contextlib提供了更简单的写法
+			很多时候，我们希望在某段代码执行前后自动执行特定代码，也可以用@contextmanager实现
+			@contextmanager让我们通过编写generator来简化上下文管理
+		@closing
+			如果一个对象没有实现上下文，我们就不能把它用于with语句。这个时候，可以用closing()来把该对象变为上下文对象
+			closing也是一个经过@contextmanager装饰的generator
+			它的作用就是把任意对象变为上下文对象，并支持with语句。
+
+			@contextlib还有一些其他decorator，便于我们编写更简洁的代码
+	urllib:
+		urllib提供了一系列操作URL的功能
+		Get:
+			urllib的request模块可以非常方便的抓取URL的内容，也就是发送一个get请求到指定的页面，然后返回HTTP的响应
+			如果我们要想模拟浏览器发送GET请求，就需要使用Request对象，通过往Request对象添加HTTP头，我们就可以把请求伪装成浏览器。
+		Post:
+			如果要以POST发送一个请求，只需要把参数data以bytes形式传入
+		Handler:
+			如果还需要更复杂的控制，比如通过一个proxy去访问网站，我们需要利用proxyhandler来处理
+		urllib提供的功能就是利用程序去执行各种HTTP请求。如果要模拟浏览器完成特定功能，需要把请求伪装成浏览器。伪装的方法是先监控浏览器发出的请求，在根据浏览器的请求头来伪装，user-agent头就是用来标识浏览器的。
+	XML:
+		操作XML有两种方法：DOM和SAX。DOM会把整个XML读入内存，解析为树，因此占用内存大，解析慢，优点是可以任意遍历树的节点。SAX是流模式，边读边解析，占用内存小，解析快，缺点是我们需要自己处理事件。
+
+		正常情况下，优先考虑SAX，因为DOM实在太占内存。
+		在Python中使用SAX解析XML非常简洁，通常我们关心的事件是start_element，end_element和char_data，准备好这3个函数，然后就可以解析xml了
+		解析XML时，注意找出自己感兴趣的节点，响应事件时，把节点数据保存起来。解析完毕后，就可以处理数据。
+	HTMLParser:
+		HTML本质上是XML的子集，但是HTML的语法没有XML那么严格，所以不能用标准的DOM或SAX来解析HTML。
+
+		好在Python提供了HTMLParser来非常方便地解析HTML，只需简单几行代码：
+		利用HTMLParser，可以把网页中的文本、图像等解析出来。
+常用第三方模块：
+	pillow：python图像处理标准库
+		sudo pip install pillow
+		PIL提供了操作图像的强大功能，可以通过简单的代码完成复杂的图像处理
+		from PIL import Image
+		操作图像：
+			缩放、切片、旋转、滤镜、输出文字、调色板、模糊
+	requests:
+		我们已经讲解了Python内置的urllib模块，用于访问网络资源。但是，它用起来比较麻烦，而且，缺少很多实用的高级功能。
+
+		更好的方案是使用requests。它是一个Python第三方库，处理URL资源特别方便。
+	chardet:
+		用它来检测编码，简单易用。chardet支持检测中文、日文、韩文等多种语言。
+		>>> data = '离离原上草，一岁一枯荣'.encode('gbk')
+		>>> chardet.detect(data)
+		{'encoding': 'GB2312', 'confidence': 0.7407407407407407, 'language': 'Chinese'}
+		用chardet检测编码，使用简单。获取到编码后，再转换为str，就可以方便后续处理
+	psutil:
+		在Python中获取系统信息的另一个好办法是使用psutil这个第三方模块。顾名思义，psutil = process and system utilities，它不仅可以通过一两行代码实现系统监控，还可以跨平台使用，支持Linux／UNIX／OSX／Windows等，是系统管理员和运维小伙伴不可或缺的必备模块。
+		获取cpu信息
+		获取内存信息
+		获取磁盘信息
+		获取网络信息#获取网络连接信息需要root权限，这种情况下，可以退出Python交互环境，用sudo重新启动sudo python3
+		获取进程信息#和获取网络连接类似，获取一个root用户的进程需要root权限，启动Python交互环境或者.py文件时，需要sudo权限。
+		psutil还提供了一个test()函数，可以模拟出ps命令的效果：
+		psutil使得Python程序获取系统信息变得易如反掌。
+
+		psutil还可以获取用户信息、Windows服务等很多有用的系统信息
+virtualenv:
+	virtualenv是如何创建“独立”的Python运行环境的呢？原理很简单，就是把系统Python复制一份到virtualenv的环境，用命令source venv/bin/activate进入一个virtualenv环境时，virtualenv会修改相关环境变量，让命令python和pip均指向当前的virtualenv环境。
+	virtualenv为应用提供了隔离的Python运行环境，解决了不同应用间多版本的冲突问题。
+图形界面：
+	Python支持多种图形界面的第三方库，包括：
+		TK、wxWidgets、Qt、GTK
+		但是Python自带的库是支持Tk的Tkinter，使用Tkinter，无需安装任何包，就可以直接使用。本章简单介绍如何使用Tkinter进行GUI编程。
+	Python内置的Tkinter可以满足基本的GUI程序的要求，如果是非常复杂的GUI程序，建议用操作系统原生支持的语言和库来编写。
+
+
+
+
+
+
 
 
 

@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # _*_ coding:utf-8 _*_
-import re
-def is_valid_email(addr):
-    re.compile(r'[\S\.]+@[\S]+.com')
 
 
+本周工作：
+    1.编写脚本完成对服务器的cpu、内存、磁盘使用率采集，流式上传到日志平台上实时监控
+    2.对流式上传更进一步了解，熟悉解析规则，搜索语法
+    3.学习Python开发相关
+下周工作:
+    1.加强shell操作指令学习
+    2.加强Python开发相关知识学习
