@@ -80,3 +80,74 @@ if __name__ == "__main__":
 3.2018.4.21熟悉   wc ,cut ,awk ,sort ,uqic ,tail ,head ,tail -f ,du ,df ,date ,time
         dict ,set ,list curd+iter
         range /xrange区别 2018.4.25号前完成
+
+        wc:
+                wc[选项]文件
+                参数-c字节数；-l行数；-m字符数；-w字数，一个字被定义为由空白，跳格或换行字符分割的字符串；-L打印最长行的长度（字节数）；从标准输入读取：输入完enter+catr+d
+        cut：
+                cut -b 1,3,5  test.txt 剪切每一行的第1，3，5个字节
+                cut -nb 1,3,5  test.txt剪切每一行的第1，3，5个字符
+                cut -c 1，3，5  test.txt 剪切每一行的第1，3，5个字符
+                cat test.txt | cut -d : -f 1   剪切test.txt文档中以：分割，第一个域f 1的值,-f 2表示第二个域（也就是第1，2个：之间的东西）
+        awk:
+                awk是一个强大的文本分析工具，相对于grep的查找，sed的编辑，awk在其对数据分析并生成报告时，显得尤为强大。简单来说AWK就是把文件逐行读入，以空格为默认分隔符将每行切片，切开的部分再进行各种分析处理
+                awk '{pattern + action}' {filenames}
+                $0变量是指整条记录。$1表示当前行的第一个域,$2表示当前行的第二个域
+                cat /etc/passwd |awk  -F ':'  '{print $1}' #只是显示/etc/passwd的账户
+                cat /etc/passwd |awk  -F ':'  '{print $1"\t"$7}'#只是显示/etc/passwd的账户和账户对应的shell,而账户与shell之间以tab键分割
+                cat /etc/passwd |awk  -F ':'  'BEGIN {print "name,shell"}  {print $1","$7} END {print "blue,/bin/nosh"}'
+                #如果只是显示/etc/passwd的账户和账户对应的shell,而账户与shell之间以逗号分割,而且在所有行添加列名name,shell,在最后一行添加"blue,/bin/nosh"。
+                awk工作流程是这样的：先执行BEGING，然后读取文件，读入有/n换行符分割的一条记录，然后将记录按指定的域分隔符划分域，填充域，$0则表示所有域,$1表示第一个域,$n表示第n个域,随后开始执行模式所对应的动作action。
+                接着开始读入第二条记录······直到所有的记录都读完，最后执行END操作。
+                awk -F: '/root/' /etc/passwd#搜索/etc/passwd有root关键字的所有行   这种是pattern的使用示例，匹配了pattern(这里是root)的行才会执行action(没有指定action，默认输出每行的内容)。
+                搜索支持正则，例如找root开头的: awk -F: '/^root/' /etc/passwd
+                awk -F: '/root/{print $7}' /etc/passwd  #搜索/etc/passwd有root关键字的所有行，并显示对应的shell   这里指定了action{print $7}
+                awk内置变量：
+                        ARGC               命令行参数个数
+                        ARGV               命令行参数排列
+                        ENVIRON            支持队列中系统环境变量的使用
+                        FILENAME           awk浏览的文件名
+                        FNR                浏览文件的记录数
+                        FS                 设置输入域分隔符，等价于命令行 -F选项
+                        NF                 浏览记录的域的个数
+                        NR                 已读的记录数
+                        OFS                输出域分隔符
+                        ORS                输出记录分隔符
+                        RS                 控制记录分隔符
+                        统计/etc/passwd:文件名，每行的行号，每行的列数，对应的完整行内容:
+                        awk  -F ':'  '{print "filename:" FILENAME ",linenumber:" NR ",columns:" NF ",linecontent:"$0}' /etc/passwd
+  
+                        使用printf替代print,可以让代码更加简洁，易读
+                        awk  -F ':'  '{printf("filename:%10s,linenumber:%s,columns:%s,linecontent:%s\n",FILENAME,NR,NF,$0)}' /etc/passwd
+
+                        awk中同时提供了print和printf两种打印输出的函数。
+                        其中print函数的参数可以是变量、数值或者字符串。字符串必须用双引号引用，参数用逗号分隔。如果没有逗号，参数就串联在一起而无法区分。这里，逗号的作用与输出文件的分隔符的作用是一样的，只是后者是空格而已。
+                        printf函数，其用法和c语言中printf基本相似,可以格式化字符串,输出复杂时，printf更加好用，代码更易懂。
+                awk编程：
+                        除了awk的内置变量，awk还可以自定义变量。
+                        下面统计/etc/passwd的账户人数
+                        awk '{count++;print $0;} END{print "user count is ", count}' /etc/passwd#count是自定义变量。之前的action{}里都是只有一个print,其实print只是一个语句，而action{}可以有多个语句，以;号隔开。
+                        这里没有初始化count，虽然默认是0，但是妥当的做法还是初始化为0:
+                        awk 'BEGIN {count=0;print "[start]user count is ", count} {count=count+1;print $0;} END{print "[end]user count is ", count}' /etc/passwd
+                        统计某个文件夹下的文件占用的字节数
+
+                        ls -l |awk 'BEGIN {size=0;} {size=size+$5;} END{print "[end]size is ", size}'
+                        [end]size is  8657198
+                         
+
+                        如果以M为单位显示:
+
+                        ls -l |awk 'BEGIN {size=0;} {size=size+$5;} END{print "[end]size is ", size/1024/1024,"M"}' 
+                        [end]size is  8.25889 M
+                        注意，统计不包括文件夹的子目录。
+                        条件语句：
+                                统计某个文件夹下的文件占用的字节数,过滤4096大小的文件(一般都是文件夹):
+
+                                ls -l |awk 'BEGIN {size=0;print "[start]size is ", size} {if($5!=4096){size=size+$5;}} END{print "[end]size is ", size/1024/1024,"M"}' 
+                                [end]size is  8.22339 M
+                        循环语句：
+                                显示/etc/passwd的账户
+
+                                awk -F ':' 'BEGIN {count=0;} {name[count] = $1;count++;}; END{for (i = 0; i < NR; i++) print i, name[i]}' /etc/passwd
+                                
+
