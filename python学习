@@ -1464,8 +1464,137 @@ virtualenv:
 	编写MUA从MDA上收邮件。
 	发邮件时，MUA和MTA使用的协议就是SMTP：Simple Mail Transfer Protocol，后面的MTA到另一个MTA也是用SMTP协议。
 	收邮件时，MUA和MDA使用的协议有两种：POP：Post Office Protocol，目前版本是3，俗称POP3；IMAP：Internet Message Access Protocol，目前版本是4，优点是不但能取邮件，还可以直接操作MDA上存储的邮件，比如从收件箱移到垃圾箱，等等。
+2018.4.26
+	SMTP发送邮件：
+		使用Python的smtplib发送邮件十分简单，只要掌握了各种邮件类型的构造方法，正确设置好邮件头，就可以顺利发出。
 
+		构造一个邮件对象就是一个Messag对象，如果构造一个MIMEText对象，就表示一个文本邮件对象，如果构造一个MIMEImage对象，就表示一个作为附件的图片，要把多个对象组合起来，就用MIMEMultipart对象，而MIMEBase可以表示任何对象。它们的继承关系如下：
 
+		Message
+		+- MIMEBase
+		   +- MIMEMultipart
+		   +- MIMENonMultipart
+		      +- MIMEMessage
+		      +- MIMEText
+		      +- MIMEImage
+		这种嵌套关系就可以构造出任意复杂的邮件。
+	pop3收取邮件：
+		收取邮件分为两步：
+			用poplib把邮件的原始文本下载到本地；poplib实现了pop3协议，可以用来收邮件
+			用email解析原始文本，还原为邮件对象
+		用Python的poplib模块收取邮件分两步：第一步是用POP3协议把邮件获取到本地，第二步是用email模块把原始邮件解析为Message对象，然后，用适当的形式把邮件内容展示给用户即可。
+
+访问数据库：
+	为了便于保存和读取数据，而且，能直接通过条件快速查询到指定的数据，就出现了数据库database，这种专门用于集中存储和查询的软件
+	在关系数据库中，这种基于表（table）的一对多的关系就是关系数据库的基础
+	表示数据库中存放关系数据的集合，，表和表之间通过外键关联
+
+	SQLite:
+		是一种嵌入式数据库，它的数据库就是一个文件。sqlite本身是c写的，而且体积小，所以常被集成到各种应用程序中，甚至在iOS和Android的app中都可以集成
+		python内置了sqlite3
+			要操作关系数据库，首先要连接到数据库，一个数据库连接称为connection
+			连接到数据库后，需要打开游标，称之为cursor，通过cursor执行sql语句，然后执行结果
+			python定义了一套操作数据库的api接口，任何数据要连接到Python，只需要提供符合python标准的数据库驱动即可。
+
+			在Python中操作数据库时，要先导入数据库对应的驱动，然后，通过Connection对象和Cursor对象操作数据。
+
+			要确保打开的Connection对象和Cursor对象都正确地被关闭，否则，资源就会泄露。
+
+			如何才能确保出错的情况下也关闭掉Connection对象和Cursor对象呢？请回忆try:...except:...finally:...的用法。
+	使用MySQL：
+		MySQL是Web世界中使用最广泛的数据库服务器。SQLite的特点是轻量级、可嵌入，但不能承受高并发访问，适合桌面和移动应用。而MySQL是为服务器端设计的数据库，能承受高并发访问，同时占用的内存也远远大于SQLite。
+		MySQL内部有多种数据库引擎，最常用的引擎是支持数据库事务的InnoDB
+		由于Python的DB-API定义都是通用的，所以，操作MySQL的数据库代码和SQLite类似。
+		执行INSERT等操作后要调用commit()提交事务；
+
+		MySQL的SQL占位符是%s。
+	使用SQLAlchemy:
+		数据库表是一个二维表，包含多行多列。把一个表的内容用Python的数据结构表示出来的话，可以用一个list表示多行，list的每一个元素是tuple，表示一行记录，比如，包含id和name的user表：
+		但是用tuple表示一行很难看出表的结构。如果把一个tuple用class实例来表示，就可以更容易地看出表的结构来：
+			于是出现 ORM技术：Object-Relational Mapping,把关系数据库的表结构映射到对象上。
+			但是由谁来做这个转换呢？所以ORM框架应运而生。
+
+			在Python中，最有名的ORM框架是SQLAlchemy
+			ORM框架的作用就是把数据库表的一行记录与一个对象互相做自动转换。
+
+			正确使用ORM的前提是了解关系数据库的原理。
+web开发：
+	Web开发也经历了好几个阶段：
+
+		1.静态Web页面：由文本编辑器直接编辑并生成静态的HTML页面，如果要修改Web页面的内容，就需要再次编辑HTML源文件，早期的互联网Web页面就是静态的；
+
+		2.CGI：由于静态Web页面无法与用户交互，比如用户填写了一个注册表单，静态Web页面就无法处理。要处理用户发送的动态数据，出现了Common Gateway Interface，简称CGI，用C/C++编写。
+
+		3.ASP/JSP/PHP：由于Web应用特点是修改频繁，用C/C++这样的低级语言非常不适合Web开发，而脚本语言由于开发效率高，与HTML结合紧密，因此，迅速取代了CGI模式。ASP是微软推出的用VBScript脚本编程的Web开发技术，而JSP用Java来编写脚本，PHP本身则是开源的脚本语言。
+
+		4.MVC：为了解决直接用脚本语言嵌入HTML导致的可维护性差的问题，Web应用也引入了Model-View-Controller的模式，来简化Web开发。ASP发展为ASP.Net，JSP和PHP也有一大堆MVC框架。
+
+		目前，Web开发技术仍在快速发展中，异步开发、新的MVVM前端技术层出不穷。
+	http协议简介：
+			HTTP请求
+			跟踪了新浪的首页，我们来总结一下HTTP请求的流程：
+			步骤1：浏览器首先向服务器发送HTTP请求，请求包括：
+			方法：GET还是POST，GET仅请求资源，POST会附带用户数据；
+			路径：/full/url/path；
+			域名：由Host头指定：Host: www.sina.com.cn
+			以及其他相关的Header；
+			如果是POST，那么请求还包括一个Body，包含用户数据。
+
+			步骤2：服务器向浏览器返回HTTP响应，响应包括：
+			响应代码：200表示成功，3xx表示重定向，4xx表示客户端发送的请求有错误，5xx表示服务器端处理时发生了错误；
+			响应类型：由Content-Type指定；
+			以及其他相关的Header；
+			通常服务器的HTTP响应会携带内容，也就是有一个Body，包含响应的内容，网页的HTML源码就在Body中。
+
+			步骤3：如果浏览器还需要继续向服务器请求其他资源，比如图片，就再次发出HTTP请求，重复步骤1、2。
+			Web采用的HTTP协议采用了非常简单的请求-响应模式，从而大大简化了开发。当我们编写一个页面时，我们只需要在HTTP请求中把HTML发送出去，不需要考虑如何附带图片、视频等，浏览器如果需要请求图片和视频，它会发送另一个HTTP请求，因此，一个HTTP请求只处理一个资源。
+			HTTP协议同时具备极强的扩展性，虽然浏览器请求的是http://www.sina.com.cn/的首页，但是新浪在HTML中可以链入其他服务器的资源，比如<img src="http://i1.sinaimg.cn/home/2013/1008/U8455P30DT20131008135420.png">，从而将请求压力分散到各个服务器上，并且，一个站点可以链接到其他站点，无数个站点互相链接起来，就形成了World Wide Web，简称WWW。
+
+			HTTP格式
+			每个HTTP请求和响应都遵循相同的格式，一个HTTP包含Header和Body两部分，其中Body是可选的。
+			HTTP协议是一种文本协议，所以，它的格式也非常简单。
+
+			HTTP GET请求的格式：
+			GET /path HTTP/1.1
+			Header1: Value1
+			Header2: Value2
+			Header3: Value3
+			每个Header一行一个，换行符是\r\n。
+
+			HTTP POST请求的格式：
+			POST /path HTTP/1.1
+			Header1: Value1
+			Header2: Value2
+			Header3: Value3
+
+			body data goes here...
+			当遇到连续两个\r\n时，Header部分结束，后面的数据全部是Body。
+
+			HTTP响应的格式：
+			200 OK
+			Header1: Value1
+			Header2: Value2
+			Header3: Value3
+
+			body data goes here...
+			HTTP响应如果包含body，也是通过\r\n\r\n来分隔的。请再次注意，Body的数据类型由Content-Type头来确定，如果是网页，Body就是文本，如果是图片，Body就是图片的二进制数据。
+
+			当存在Content-Encoding时，Body数据是被压缩的，最常见的压缩方式是gzip，所以，看到Content-Encoding: gzip时，需要将Body数据先解压缩，才能得到真正的数据。压缩的目的在于减少Body的大小，加快网络传输。
+
+	html简介：
+		如果要学习Web开发，首先要对HTML、CSS和JavaScript作一定的了解。HTML定义了页面的内容，CSS来控制页面元素的样式，而JavaScript负责页面的交互逻辑。
+
+	WSGI接口：Web Server Gateway Interface，一个统一的接口，让我们专心用Python编写Web业务
+		一个Web应用的本质就是：
+
+			浏览器发送一个HTTP请求；
+			服务器收到请求，生成一个HTML文档；
+			服务器把HTML文档作为HTTP响应的Body发送给浏览器；
+			浏览器收到HTTP响应，从HTTP Body取出HTML文档并显示。
+			所以，最简单的Web应用就是先把HTML用文件保存好，用一个现成的HTTP服务器软件，接收用户请求，从文件中读取HTML，返回。Apache、Nginx、Lighttpd等这些常见的静态服务器就是干这件事情的。
+		无论多么复杂的Web应用程序，入口都是一个WSGI处理函数。HTTP请求的所有输入信息都可以通过environ获得，HTTP响应的输出都可以通过start_response()加上函数返回值作为Body。
+
+		复杂的Web应用程序，光靠一个WSGI函数来处理还是太底层了，我们需要在WSGI之上再抽象出Web框架，进一步简化Web开发。
 
 
 

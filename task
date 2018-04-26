@@ -389,5 +389,5 @@ iter函数：
 
                 如果__next__的返回值等于sentinel，则抛出StopIteration异常，否则返回下一个值。
 
-
+        dict 中 iterkeys()  iteritems() itervalues()
 
